@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NimexArc</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      background: #d8ab93;
+      font-family: 'Quicksand', Arial, sans-serif;
+      margin: 0;
+      scroll-behavior: smooth;
+      padding-top: 80px; /* reserve space for fixed group buttons */
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto 40px;
+      padding: 0 10px 20px;
+      position: relative;
+    }
+    .profile-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .profile-img {
+      width: 105px;
+      height: 105px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 6px solid #fff;
+      background: #eee;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.09);
+      transition: transform 0.3s ease;
+    }
+    .profile-img:hover {
+      transform: scale(1.1);
+    }
+    .profile-title {
+      margin-top: 17px;
+      color: #fff;
+      font-size: 1.35em;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-align: center;
+      text-shadow: 0 1px 8px #624e4234;
+    }
+    .group-buttons-container {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      overflow-x: auto;
+      gap: 12px;
+      padding: 5px 10px;
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.12);
+      z-index: 9999;
+      scrollbar-width: thin;
+      scrollbar-color: #278e86 transparent;
+      max-width: 90vw;
+      -webkit-overflow-scrolling: touch;
+    }
+    .group-buttons-container::-webkit-scrollbar {
+      height: 6px;
+    }
+    .group-buttons-container::-webkit-scrollbar-thumb {
+      background-color: #278e86;
+      border-radius: 10px;
+    }
+    .group-button {
+      position: relative;
+      background: #339591;
+      border: none;
+      border-radius: 30px;
+      padding: 8px 30px 8px 60px;
+      color: #fff;
+      font-weight: 600;
+      font-size: 1em;
+      cursor: pointer;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      transition: background-color 0.3s ease;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      user-select: none;
+    }
+    .group-button:hover {
+      background: #278e86;
+    }
+    .group-button.active {
+      background: #1f625a;
+      box-shadow: 0 5px 14px rgba(0,0,0,0.3);
+    }
+    .group-button img.collage-thumb {
+      position: absolute;
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      object-fit: cover;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 2px;
+      pointer-events: none; /* so clicks go to button */
+    }
+    .collage-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 3px;
+    }
+    .group-container {
+      margin-bottom: 50px;
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: opacity 0.5s ease, max-height 0.5s ease;
+    }
+    .group-container.active {
+      opacity: 1;
+      max-height: 10000px; /* sufficiently large */
+      overflow: visible;
+      transition: opacity 0.5s ease, max-height 0.5s ease;
+    }
+    .posts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .post-card {
+      display: flex;
+      align-items: center;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 3px 7px rgba(0,0,0,0.04);
+      padding: 13px 14px;
+      border: 3px solid #278e86;
+      position: relative;
+      /* --- MODIFICATION: Added these properties --- */
+      text-decoration: none;
+      color: inherit;
+    }
+    .post-thumbnail {
+      width: 59px;
+      height: 59px;
+      object-fit: cover;
+      border-radius: 7px;
+      margin-right: 16px;
+    }
+    .post-title {
+      font-size: 1.17em;
+      color: #227e76;
+      font-weight: bold;
+      flex-grow: 1;
+    }
+    .share-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      min-width: 28px;
+      outline: none;
+      margin-left: 8px;
+    }
+    .share-btn svg {
+      vertical-align: middle;
+      display: block;
+    }
+    @media (max-width: 430px) {
+      .container {
+        max-width: 98vw;
+        padding: 22px 3vw 12px 3vw;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="group-buttons-container" id="groupButtonsContainer"></div>
+  <div class="container" id="mainContainer">
+    <div class="profile-section">
+      <img src="https://i.postimg.cc/cLSZRBKN/IMG-20251018-131251-289.webp" alt="Profile" class="profile-img" />
+      <h2 class="profile-title">nimeXarc</h2>
+    </div>
+    </div>
+
+  <script>
+    // ------------------------------------------------------------------
+    // ⬇️ EDIT THIS SECTION WITH YOUR LINKS, TITLES, AND THUMBNAILS ⬇️
+    // ------------------------------------------------------------------
+
+    const groups = [
+      {
+        name: "Group-1", // Button text for Group 1
+        posts: [
+          {
+            title: "Post #1",
+            url: "https://www.my-website.com",
+            thumbnail: "https://i.postimg.cc/rpY3GZk4/portfolio.png"
+          },
+        
+         {
+           title: "Post #2",
+           url: "https://github.com/my-project",
+           thumbnail: "https://i.postimg.cc/mD0C8BqT/github.png"
+          },
+         
+          {
+            title: "Post #3",
+            url: "https://www.deviantart.com/my-gallery",
+            thumbnail: "https://i.postimg.cc/tCTw1mC8/art.png"
+          },
+          {
+            title: "Post #4",
+            url: "https://medium.com/my-article",
+            thumbnail: "https://i.postimg.cc/KzYfB0yN/blog.png"
+          }
+          // Add more posts for this group here...
+        ]
+      },
+    /* // HIDING START HERE
+      {
+        name: "Group-2", // Button text for Group 2
+        posts: [
+          {
+            title: "Post #1",
+            url: "https://twitter.com/your-profile",
+            thumbnail: "https://i.postimg.cc/5NnnwKj7/x-logo.png"
+          },
+          {
+            title: "Post #2",
+            url: "https://linkedin.com/in/your-profile",
+            thumbnail: "https://i.postimg.cc/HxbL2z1P/linkedin.png"
+          },
+          {
+            title: "Post #3",
+            url: "https://instagram.com/your-profile",
+            thumbnail: "https://i.postimg.cc/G2YfKjP9/instagram.png"
+          }
+          // Add more posts for this group here...
+        ]
+      },
+      {
+        name: "Favorites", // Button text for Group 3
+        posts: [
+          {
+            title: "Favorite Music",
+            url: "https://spotify.com",
+            thumbnail: "https://i.postimg.cc/dV36M8qs/music.png"
+          },
+          {
+            title: "Inspiration Board",
+            url: "https://pinterest.com/your-board",
+            thumbnail: "https://i.postimg.cc/VkhYQhK2/pinterest.png"
+          }
+          // Add more posts for this group here...
+        ]
+      }
+      // Add more groups here...
+      */ 
+      // HIDING END HERE
+    ];
+     
+
+    // ------------------------------------------------------------------
+    // ⬆️ END OF EDITABLE SECTION ⬆️
+    // ------------------------------------------------------------------
+     
+
+    const mainContainer = document.getElementById('mainContainer');
+    const groupButtonsContainer = document.getElementById('groupButtonsContainer');
+
+    function createGroupElement(groupIndex, groupPosts) {
+      const groupId = `group-${groupIndex + 1}`;
+      const groupDiv = document.createElement('div');
+      groupDiv.classList.add('group-container');
+      groupDiv.id = groupId;
+
+      // Initially visible only for first group
+      if (groupIndex === 0) {
+        groupDiv.classList.add('active');
+      }
+
+      const postsList = document.createElement('div');
+      postsList.classList.add('posts-list');
+
+      groupPosts.forEach((post) => {
+        // Create an anchor tag wrapping thumbnail and title
+        const postLink = document.createElement('a');
+        postLink.href = post.url; // Use the URL from our data
+        postLink.target = '_blank';
+        postLink.rel = 'noopener noreferrer';
+        postLink.classList.add('post-card');
+        // --- MODIFICATION: Removed inline styles, now in CSS ---
+
+        const img = document.createElement('img');
+        img.src = post.thumbnail; // Use the thumbnail from our data
+        img.alt = post.title;     // Use the title for accessibility
+        img.className = 'post-thumbnail';
+
+        const postTitle = document.createElement('span');
+        postTitle.classList.add('post-title');
+        postTitle.textContent = post.title; // Use the title from our data
+
+        postLink.appendChild(img);
+        postLink.appendChild(postTitle);
+        postsList.appendChild(postLink);
+      });
+
+      groupDiv.appendChild(postsList);
+      return groupDiv;
+    }
+    
+
+    function createCollageThumbnail(groupPosts) {
+      // Create a container for collage images
+      const collageDiv = document.createElement('div');
+      collageDiv.style.display = 'grid';
+      collageDiv.style.gridTemplateColumns = 'repeat(2, 1fr)';
+      collageDiv.style.gridTemplateRows = 'repeat(2, 1fr)';
+      collageDiv.style.gap = '2px';
+      collageDiv.style.width = '44px';
+      collageDiv.style.height = '44px';
+      collageDiv.style.borderRadius = '8px';
+      collageDiv.style.overflow = 'hidden';
+      collageDiv.style.position = 'relative';
+
+      for (let i = 0; i < 4; i++) {
+        const img = document.createElement('img');
+        // Use post thumbnail, or a placeholder if group has < 4 posts
+        img.src = groupPosts[i]
+          ? groupPosts[i].thumbnail
+          : 'https://via.placeholder.com/44?text=NA'; // Placeholder
+        img.alt = `Thumb ${i + 1}`;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        img.style.borderRadius = '4px';
+        collageDiv.appendChild(img);
+      }
+
+      return collageDiv;
+    }
+
+    function createGroupButton(group, groupIndex) {
+      const btn = document.createElement('button');
+      btn.classList.add('group-button');
+      btn.textContent = group.name; // Use the name from our data
+
+      // Create collage thumbnail inside button on left side
+      const collageThumb = createCollageThumbnail(group.posts); // Pass posts
+      collageThumb.classList.add('collage-thumb');
+      btn.insertBefore(collageThumb, btn.firstChild);
+
+      // Handle click toggle active group
+      btn.onclick = () => {
+        // Deactivate all buttons and groups
+        document.querySelectorAll('.group-button').forEach((button) => {
+          button.classList.remove('active');
+        });
+        document.querySelectorAll('.group-container').forEach((group) => {
+          group.classList.remove('active');
+        });
+
+        // Activate clicked button and corresponding group
+        btn.classList.add('active');
+        document
+          .getElementById(`group-${groupIndex + 1}`)
+          .classList.add('active');
+        
+        // Optional: scroll to container top for visibility
+        // Note: 'mainContainer' is the profile, not the group.
+        // Let's scroll the group itself into view, minus the fixed header.
+        const headerOffset = 90; // 80px for padding + 10px buffer
+        const groupElement = document.getElementById(`group-${groupIndex + 1}`);
+        const elementPosition = groupElement.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+        window.scrollTo({
+            top: offsetPosition,
+            behavior: "smooth"
+        });
+      };
+
+      // Activate first button by default
+      if (groupIndex === 0) {
+        btn.classList.add('active');
+      }
+
+      return btn;
+    }
+
+    // Loop through our new 'groups' data structure
+    groups.forEach((group, index) => {
+      // Create group posts section
+      const groupEl = createGroupElement(index, group.posts);
+      mainContainer.appendChild(groupEl);
+
+      // Create group button with collage thumbnail
+      const groupBtn = createGroupButton(group, index);
+      groupButtonsContainer.appendChild(groupBtn);
+    });
+  </script>
+</body>
+</html>
+    
